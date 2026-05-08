@@ -53,7 +53,7 @@ window.addEventListener('load', async () => {
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x4a9eff);
-  scene.fog = new THREE.Fog(0x4a9eff, 60, 200);  // niebla más lejos
+  scene.fog = new THREE.Fog(0x4a9eff, 17, 26);
 
   // Cámara normal — personaje estará a escala 1.7m
   const cam = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 500);
@@ -219,6 +219,31 @@ window.addEventListener('load', async () => {
     }
   });
 
+
+  // ── CULLING DINÁMICO ─────────────────────────────────────────
+  // Todos los objetos del mundo (árboles, farolas, césped) en un array
+  const worldObjects = [];
+  scene.traverse(obj => {
+    if(obj !== char && obj !== ground && obj !== grid && !obj.isLight && !obj.isCamera) {
+      if(obj.isMesh || obj.isGroup) {
+        // solo objetos de nivel raíz de la escena
+        if(obj.parent === scene) worldObjects.push(obj);
+      }
+    }
+  });
+
+  const CULL_DIST = 26; // distancia máxima visible (15x personaje)
+  const cullObjects = () => {
+    if(!char) return;
+    const cx = char.position.x, cz = char.position.z;
+    worldObjects.forEach(obj => {
+      const dx = obj.position.x - cx;
+      const dz = obj.position.z - cz;
+      const dist = Math.sqrt(dx*dx + dz*dz);
+      obj.visible = dist < CULL_DIST;
+    });
+  };
+
   const CAM_OFF=new THREE.Vector3(0,1.6,-4.5);
   const camTgt=new THREE.Vector3(0,1,0);
   const clk=new THREE.Clock();
@@ -227,6 +252,7 @@ window.addEventListener('load', async () => {
     requestAnimationFrame(loop);
     const dt=Math.min(clk.getDelta(),0.05);
     if(mixer)mixer.update(dt);
+    cullObjects();
     if(char){
       const spd=(K.ShiftLeft||K.ShiftRight)?5.5:2.8;
       if(K.KeyA||K.ArrowLeft) char.rotation.y+=2.2*dt;
