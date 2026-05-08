@@ -108,16 +108,34 @@ window.addEventListener('load', async () => {
 
   sp(100,'¡Listo!');
 
-  // CAMINOS
+  // CAMINOS con InstancedMesh (una sola draw call, muy eficiente)
   const pathMat=new THREE.MeshLambertMaterial({color:0x8B6340});
-  const addPath=(x,z,w,h)=>{
-    const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),pathMat);
-    p.rotation.x=-Math.PI/2; p.position.set(x,0.01,z);
-    p.receiveShadow=true; scene.add(p);
+  const tileGeo=new THREE.PlaneGeometry(1,1);
+
+  // Generar posiciones de todas las baldosas
+  const tilePosNS=[], tileEO1=[], tileEO2=[];
+  for(let z=-150;z<=150;z++) for(let x=-2;x<=1;x++) tilePosNS.push([x+0.5,z+0.5]);
+  for(let x=-150;x<=150;x++) for(let dz=-2;dz<=1;dz++){
+    if(Math.abs(x+0.5)>2.5){ tileEO1.push([x+0.5,-30+dz+0.5]); tileEO2.push([x+0.5,50+dz+0.5]); }
+  }
+
+  const buildInstanced=(positions)=>{
+    const mesh=new THREE.InstancedMesh(tileGeo,pathMat,positions.length);
+    mesh.receiveShadow=true;
+    const m=new THREE.Matrix4();
+    const rot=new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2,0,0));
+    positions.forEach(([x,z],i)=>{
+      m.compose(new THREE.Vector3(x,0.01,z),rot,new THREE.Vector3(1,1,1));
+      mesh.setMatrixAt(i,m);
+    });
+    mesh.instanceMatrix.needsUpdate=true;
+    scene.add(mesh);
+    return mesh;
   };
-  addPath(0,0,4,300);
-  addPath(0,-30,300,4);
-  addPath(0,50,300,4);
+
+  buildInstanced(tilePosNS);
+  buildInstanced(tileEO1);
+  buildInstanced(tileEO2);
 
   // FAROLAS
   const poleMat=new THREE.MeshLambertMaterial({color:0x444444});
