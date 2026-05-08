@@ -27,15 +27,14 @@ canvas { display:block; width:100vw; height:100vh; }
   <p>Cargando personaje 3D...</p>
   <div class="bar"><div class="fill" id="fill"></div></div>
   <div id="ltxt">Preparando...</div>
-<div id="clickhint" style="display:none;margin-top:20px;color:rgba(255,255,255,0.5);font-size:13px;">Haz click en la pantalla para capturar el ratón · ESC para soltarlo</div>
 </div>
 <canvas id="c"></canvas>
 <div id="hud">Animación: <span id="aname">Idle</span></div>
 <div id="keys">
   <span class="k">W/↑</span><span class="kl">Caminar</span>
   <span class="k">⇧+W</span><span class="kl">Correr</span>
-  <span class="k">Ratón</span><span class="kl">Cámara</span> <span class="k">Esp</span><span class="kl">Saltar</span>
-  <span class="k">WASD</span><span class="kl">Mover</span>
+  <span class="k">Esp</span><span class="kl">Saltar</span>
+  <span class="k">A D</span><span class="kl">Girar</span>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -206,7 +205,7 @@ window.addEventListener('load', async () => {
     addA(gChar,'idle'); addA(gWalk,'walk'); addA(gRun,'run'); addA(gJump,'jump',false);
   }
 
-  setTimeout(()=>{const el=document.getElementById('loading');el.style.opacity='0';setTimeout(()=>{el.style.display='none';document.getElementById('clickhint').style.display='block';},700);},300);
+  setTimeout(()=>{const el=document.getElementById('loading');el.style.opacity='0';setTimeout(()=>el.style.display='none',700);},300);
 
   const lbls={idle:'Idle',walk:'Caminando',run:'Corriendo',jump:'Saltando'};
   const play=name=>{
@@ -226,7 +225,7 @@ window.addEventListener('load', async () => {
   let jumping=false,jv=0;
   addEventListener('keydown',e=>{
     if(e.code==='Space'&&!jumping&&char){
-      jumping=true;jv=19.33;play('jump');
+      jumping=true;jv=2.416;play('jump');
       if(anims['jump']){
         mixer.addEventListener('finished',function cb(ev){
           if(ev.action===anims['jump']){
@@ -239,46 +238,32 @@ window.addEventListener('load', async () => {
   });
 
 
-
-  // ── CULLING DINÁMICO (se construye DESPUÉS de colocar todos los objetos) ──
-  const CULL_DIST = 26;
+  // ── CULLING DINÁMICO ─────────────────────────────────────────
+  // Todos los objetos del mundo (árboles, farolas, césped) en un array
   const worldObjects = [];
-  scene.children.forEach(obj => {
-    if(!obj.isLight && !obj.isCamera && obj !== ground && obj !== grid) {
-      worldObjects.push(obj);
+  scene.traverse(obj => {
+    if(obj !== char && obj !== ground && obj !== grid && !obj.isLight && !obj.isCamera) {
+      if(obj.isMesh || obj.isGroup) {
+        // solo objetos de nivel raíz de la escena
+        if(obj.parent === scene) worldObjects.push(obj);
+      }
     }
   });
 
+  const CULL_DIST = 26; // distancia máxima visible (15x personaje)
   const cullObjects = () => {
     if(!char) return;
     const cx = char.position.x, cz = char.position.z;
     worldObjects.forEach(obj => {
-      if(obj === char) return; // nunca ocultar el personaje
       const dx = obj.position.x - cx;
       const dz = obj.position.z - cz;
-      obj.visible = (dx*dx + dz*dz) < CULL_DIST*CULL_DIST;
+      const dist = Math.sqrt(dx*dx + dz*dz);
+      obj.visible = dist < CULL_DIST;
     });
   };
 
-  // ── CÁMARA CON RATÓN ─────────────────────────────────────────
-  let camYaw   = Math.PI;   // rotación horizontal (empieza detrás del personaje)
-  let camPitch = 0.3;       // rotación vertical
-  const CAM_DIST   = 4.5;   // distancia al personaje
-  const CAM_HEIGHT = 1.0;   // altura del punto de mira
-  const camTgt = new THREE.Vector3();
-
-  // Capturar ratón
-  let pointerLocked = false;
-  document.addEventListener('click', () => { document.body.requestPointerLock(); });
-  document.addEventListener('pointerlockchange', () => {
-    pointerLocked = document.pointerLockElement === document.body;
-  });
-  document.addEventListener('mousemove', e => {
-    if(!pointerLocked) return;
-    camYaw   -= e.movementX * 0.003;
-    camPitch -= e.movementY * 0.003;
-    camPitch  = Math.max(-0.2, Math.min(1.0, camPitch)); // limitar pitch
-  });
+  const CAM_OFF=new THREE.Vector3(0,1.6,-4.5);
+  const camTgt=new THREE.Vector3(0,1,0);
   const clk=new THREE.Clock();
 
   (function loop(){
@@ -295,7 +280,7 @@ window.addEventListener('load', async () => {
         const d=new THREE.Vector3(Math.sin(char.rotation.y),0,Math.cos(char.rotation.y));
         char.position.addScaledVector(d,spd*dt); mov=true;
       }
-      if(jumping){jv+=-20*dt;char.position.y+=jv*dt;if(char.position.y<=0){char.position.y=0;if(!anims['jump']){jumping=false;jv=0;}}}
+      if(jumping){jv+=-2.5*dt;char.position.y+=jv*dt;if(char.position.y<=0){char.position.y=0;if(!anims['jump']){jumping=false;jv=0;}}}
       if(!jumping){
         if(mov&&(K.ShiftLeft||K.ShiftRight))play('run');
         else if(mov)play('walk');
