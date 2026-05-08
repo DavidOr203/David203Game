@@ -27,14 +27,15 @@ canvas { display:block; width:100vw; height:100vh; }
   <p>Cargando personaje 3D...</p>
   <div class="bar"><div class="fill" id="fill"></div></div>
   <div id="ltxt">Preparando...</div>
+<div id="clickhint" style="display:none;margin-top:20px;color:rgba(255,255,255,0.5);font-size:13px;">Haz click en la pantalla para capturar el ratón · ESC para soltarlo</div>
 </div>
 <canvas id="c"></canvas>
 <div id="hud">Animación: <span id="aname">Idle</span></div>
 <div id="keys">
   <span class="k">W/↑</span><span class="kl">Caminar</span>
   <span class="k">⇧+W</span><span class="kl">Correr</span>
-  <span class="k">Esp</span><span class="kl">Saltar</span>
-  <span class="k">A D</span><span class="kl">Girar</span>
+  <span class="k">Ratón</span><span class="kl">Cámara</span> <span class="k">Esp</span><span class="kl">Saltar</span>
+  <span class="k">WASD</span><span class="kl">Mover</span>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -205,7 +206,7 @@ window.addEventListener('load', async () => {
     addA(gChar,'idle'); addA(gWalk,'walk'); addA(gRun,'run'); addA(gJump,'jump',false);
   }
 
-  setTimeout(()=>{const el=document.getElementById('loading');el.style.opacity='0';setTimeout(()=>el.style.display='none',700);},300);
+  setTimeout(()=>{const el=document.getElementById('loading');el.style.opacity='0';setTimeout(()=>{el.style.display='none';document.getElementById('clickhint').style.display='block';},700);},300);
 
   const lbls={idle:'Idle',walk:'Caminando',run:'Corriendo',jump:'Saltando'};
   const play=name=>{
@@ -262,8 +263,25 @@ window.addEventListener('load', async () => {
     });
   };
 
-  const CAM_OFF=new THREE.Vector3(0,1.6,-4.5);
-  const camTgt=new THREE.Vector3(0,1,0);
+  // ── CÁMARA CON RATÓN ─────────────────────────────────────────
+  let camYaw   = Math.PI;   // rotación horizontal (empieza detrás del personaje)
+  let camPitch = 0.3;       // rotación vertical
+  const CAM_DIST   = 4.5;   // distancia al personaje
+  const CAM_HEIGHT = 1.0;   // altura del punto de mira
+  const camTgt = new THREE.Vector3();
+
+  // Capturar ratón
+  let pointerLocked = false;
+  document.addEventListener('click', () => { document.body.requestPointerLock(); });
+  document.addEventListener('pointerlockchange', () => {
+    pointerLocked = document.pointerLockElement === document.body;
+  });
+  document.addEventListener('mousemove', e => {
+    if(!pointerLocked) return;
+    camYaw   -= e.movementX * 0.003;
+    camPitch -= e.movementY * 0.003;
+    camPitch  = Math.max(-0.2, Math.min(1.0, camPitch)); // limitar pitch
+  });
   const clk=new THREE.Clock();
 
   (function loop(){
