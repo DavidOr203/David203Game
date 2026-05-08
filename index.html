@@ -239,27 +239,24 @@ window.addEventListener('load', async () => {
   });
 
 
-  // ── CULLING DINÁMICO ─────────────────────────────────────────
-  // Todos los objetos del mundo (árboles, farolas, césped) en un array
+
+  // ── CULLING DINÁMICO (se construye DESPUÉS de colocar todos los objetos) ──
+  const CULL_DIST = 26;
   const worldObjects = [];
-  scene.traverse(obj => {
-    if(obj !== char && obj !== ground && obj !== grid && !obj.isLight && !obj.isCamera) {
-      if(obj.isMesh || obj.isGroup) {
-        // solo objetos de nivel raíz de la escena
-        if(obj.parent === scene) worldObjects.push(obj);
-      }
+  scene.children.forEach(obj => {
+    if(!obj.isLight && !obj.isCamera && obj !== ground && obj !== grid) {
+      worldObjects.push(obj);
     }
   });
 
-  const CULL_DIST = 26; // distancia máxima visible (15x personaje)
   const cullObjects = () => {
     if(!char) return;
     const cx = char.position.x, cz = char.position.z;
     worldObjects.forEach(obj => {
+      if(obj === char) return; // nunca ocultar el personaje
       const dx = obj.position.x - cx;
       const dz = obj.position.z - cz;
-      const dist = Math.sqrt(dx*dx + dz*dz);
-      obj.visible = dist < CULL_DIST;
+      obj.visible = (dx*dx + dz*dz) < CULL_DIST*CULL_DIST;
     });
   };
 
