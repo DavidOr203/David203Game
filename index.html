@@ -247,6 +247,7 @@ window.addEventListener('load', async () => {
       anims[name]=a;
     };
     addA(gChar,'idle'); addA(gWalk,'walk'); addA(gRun,'run'); addA(gJump,'jump',false);
+    if(anims['jump']) anims['jump'].timeScale = 2;
   }
 
   setTimeout(()=>{const el=document.getElementById('loading');el.style.opacity='0';setTimeout(()=>el.style.display='none',700);},300);
@@ -269,7 +270,7 @@ window.addEventListener('load', async () => {
   let jumping=false,jv=0;
   addEventListener('keydown',e=>{
     if(e.code==='Space'&&!jumping&&char){
-      jumping=true;jv=2.416;play('jump');
+      jumping=true;jv=4.832;play('jump');
       if(anims['jump']){
         mixer.addEventListener('finished',function cb(ev){
           if(ev.action===anims['jump']){
@@ -324,7 +325,7 @@ window.addEventListener('load', async () => {
         const d=new THREE.Vector3(Math.sin(char.rotation.y),0,Math.cos(char.rotation.y));
         char.position.addScaledVector(d,spd*dt); mov=true;
       }
-      if(jumping){jv+=-2.5*dt;char.position.y+=jv*dt;if(char.position.y<=0){char.position.y=0;if(!anims['jump']){jumping=false;jv=0;}}}
+      if(jumping){jv+=-10*dt;char.position.y+=jv*dt;if(char.position.y<=0){char.position.y=0;if(!anims['jump']){jumping=false;jv=0;}}}
       if(!jumping){
         if(mov&&(K.ShiftLeft||K.ShiftRight))play('run');
         else if(mov)play('walk');
