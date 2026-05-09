@@ -99,6 +99,50 @@ window.addEventListener('load', async () => {
     sp(pct,`Cargando ${label}...`);
     loader.load(url,res,undefined,e=>{console.error(label,e);res(null);});
   });
+  // ── CASAS ─────────────────────────────────────────────────────
+  const houseModels = [gHouseA, gHouseB, gHouseC, gHouseD].filter(Boolean);
+  const placeHouse = (x, z, scale=1, ry=0) => {
+    if(!houseModels.length) return;
+    const g = houseModels[Math.floor(Math.random()*houseModels.length)];
+    const h = g.scene.clone(true);
+    h.scale.setScalar(scale);
+    h.position.set(x, 0, z);
+    h.rotation.y = ry;
+    h.traverse(c=>{ if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; }});
+    scene.add(h);
+  };
+
+  // Casas a los lados del camino N-S (dejando espacio al camino)
+  const houseRowNS = [-80,-60,-45,-25,-10,15,30,55,70,90];
+  houseRowNS.forEach(z => {
+    if(Math.random()>0.3) placeHouse(-8  + (Math.random()-.5)*3, z, 1, Math.random()*Math.PI*2);
+    if(Math.random()>0.3) placeHouse( 8  + (Math.random()-.5)*3, z, 1, Math.random()*Math.PI*2);
+  });
+
+  // Casas a los lados del camino E-O (z=-30)
+  const houseRowEO1 = [-80,-60,-45,-25,25,45,60,80];
+  houseRowEO1.forEach(x => {
+    if(Math.random()>0.3) placeHouse(x, -38 + (Math.random()-.5)*3, 1, Math.random()*Math.PI*2);
+    if(Math.random()>0.3) placeHouse(x, -22 + (Math.random()-.5)*3, 1, Math.random()*Math.PI*2);
+  });
+
+  // Casas a los lados del camino E-O (z=50)
+  const houseRowEO2 = [-80,-60,-45,-25,25,45,60,80];
+  houseRowEO2.forEach(x => {
+    if(Math.random()>0.3) placeHouse(x, 44 + (Math.random()-.5)*3, 1, Math.random()*Math.PI*2);
+    if(Math.random()>0.3) placeHouse(x, 58 + (Math.random()-.5)*3, 1, Math.random()*Math.PI*2);
+  });
+
+  // Casas aisladas dispersas por el mapa
+  const isolatedHouses = [
+    [-25,-55],[25,-55],[-55,5],[55,5],[-20,75],[20,75],
+    [-65,-45],[65,-45],[0,95],[-45,25],[45,25],[30,-70],[-30,-70],
+    [-70,70],[70,70],[-90,0],[90,0]
+  ];
+  isolatedHouses.forEach(([hx,hz]) => {
+    if(Math.random()>0.2) placeHouse(hx+(Math.random()-.5)*6, hz+(Math.random()-.5)*6, 1, Math.random()*Math.PI*2);
+  });
+
   const M='models/';
   const gChar=await load(M+'Meshy_AI_Crimson_Hoodie_Portra_biped_Character_output.glb','personaje',15);
   const gWalk=await load(M+'Meshy_AI_Crimson_Hoodie_Portra_biped_Animation_Walking_withSkin.glb','walking',40);
