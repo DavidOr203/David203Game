@@ -273,8 +273,10 @@ window.addEventListener('load', async () => {
     if(!houseModels.length) return;
     const g = houseModels[Math.floor(Math.random()*houseModels.length)];
     const h = g.scene.clone(true);
-    h.scale.setScalar(scale||1);
-    h.position.set(x, 0, z);
+    const s = (scale||1) * 3;  // x3 de tamaño
+    h.scale.setScalar(s);
+    // min_y del modelo es -0.681, subirlo para que la base toque el suelo
+    h.position.set(x, 0.681 * s, z);
     h.rotation.y = ry||0;
     h.traverse(ch=>{ if(ch.isMesh){ ch.castShadow=true; ch.receiveShadow=true; }});
     scene.add(h);
