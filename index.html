@@ -3,186 +3,375 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crimson Hoodie 3D</title>
+<title>Bazar Chino 3D</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { overflow:hidden; background:#0d0020; font-family:'Segoe UI',sans-serif; }
+body { overflow:hidden; background:#111; font-family:'Segoe UI',sans-serif; }
 canvas { display:block; width:100vw; height:100vh; }
-#hud { position:fixed; top:16px; right:16px; background:rgba(0,0,0,0.6); border:1px solid rgba(255,80,80,0.4); border-radius:12px; padding:10px 18px; color:#fff; font-size:13px; backdrop-filter:blur(8px); pointer-events:none; }
-#hud span { color:#ff6060; font-weight:700; }
+#hud { position:fixed; top:16px; right:16px; background:rgba(0,0,0,0.65); border:1px solid rgba(255,180,0,0.4); border-radius:12px; padding:10px 18px; color:#fff; font-size:13px; backdrop-filter:blur(8px); pointer-events:none; }
+#hud span { color:#ffcc00; font-weight:700; }
 #keys { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:flex; gap:10px; align-items:center; background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.12); border-radius:40px; padding:9px 22px; backdrop-filter:blur(8px); pointer-events:none; }
 .k { background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.28); border-radius:6px; padding:3px 9px; color:#fff; font-size:12px; font-weight:700; }
 .kl { color:rgba(255,255,255,0.55); font-size:11px; }
-#loading { position:fixed; inset:0; background:#0d0020; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; transition:opacity 0.7s; }
-#loading h1 { color:#ff4444; font-size:2.2rem; font-weight:900; letter-spacing:4px; margin-bottom:6px; }
-#loading p { color:rgba(255,255,255,0.45); font-size:13px; margin-bottom:28px; }
+#loading { position:fixed; inset:0; background:#0d0010; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; transition:opacity 0.7s; }
+#loading h1 { color:#ffcc00; font-size:2.2rem; font-weight:900; letter-spacing:4px; margin-bottom:4px; }
+#loading h2 { color:#ff4444; font-size:1.1rem; font-weight:600; letter-spacing:2px; margin-bottom:28px; }
 .bar { width:260px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
-.fill { height:100%; background:linear-gradient(90deg,#ff3333,#ff9999); width:0%; transition:width 0.35s; }
+.fill { height:100%; background:linear-gradient(90deg,#ffcc00,#ff6600); width:0%; transition:width 0.35s; }
 #ltxt { color:rgba(255,255,255,0.35); font-size:11px; margin-top:10px; }
 </style>
 </head>
 <body>
 <div id="loading">
-  <h1>CRIMSON HOODIE</h1>
-  <p>Cargando personaje 3D...</p>
+  <h1>BAZAR CHINO</h1>
+  <h2>中国市场</h2>
   <div class="bar"><div class="fill" id="fill"></div></div>
-  <div id="ltxt">Preparando...</div>
+  <div id="ltxt">Cargando ciudad...</div>
 </div>
 <canvas id="c"></canvas>
-<div id="hud">Animación: <span id="aname">Idle</span></div>
+<div id="hud">Zona: <span id="zone">Ciudad</span></div>
 <div id="keys">
-  <span class="k">W/↑</span><span class="kl">Caminar</span>
-  <span class="k">⇧+W</span><span class="kl">Correr</span>
+  <span class="k">WASD</span><span class="kl">Mover</span>
+  <span class="k">⇧</span><span class="kl">Correr</span>
   <span class="k">Esp</span><span class="kl">Saltar</span>
-  <span class="k">A D</span><span class="kl">Girar</span>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
-const sp = (p,t) => { document.getElementById('fill').style.width=p+'%'; document.getElementById('ltxt').textContent=t; };
+const sp=(p,t)=>{document.getElementById('fill').style.width=p+'%';document.getElementById('ltxt').textContent=t;};
 
-window.addEventListener('load', async () => {
-  const canvas = document.getElementById('c');
-  const R = new THREE.WebGLRenderer({canvas, antialias:true});
+window.addEventListener('load', async()=>{
+
+  // ── RENDERER ─────────────────────────────────────────────────
+  const R=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});
   R.setPixelRatio(Math.min(devicePixelRatio,2));
   R.setSize(innerWidth,innerHeight);
-  R.shadowMap.enabled = true;
-  R.shadowMap.type = THREE.PCFSoftShadowMap;
-  R.outputEncoding = THREE.sRGBEncoding;
+  R.shadowMap.enabled=true;
+  R.shadowMap.type=THREE.PCFSoftShadowMap;
+  R.outputEncoding=THREE.sRGBEncoding;
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x4a9eff);
-  scene.fog = new THREE.Fog(0x4a9eff, 17, 26);
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x87ceeb);
+  scene.fog=new THREE.Fog(0x87ceeb,25,60);
 
-  // Cámara normal — personaje estará a escala 1.7m
-  const cam = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 500);
-  cam.position.set(0, 2, 5);
-  cam.lookAt(0, 1, 0);
+  const cam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,200);
+  cam.position.set(0,3,6);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-  const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
-  sun.position.set(8,15,8); sun.castShadow=true;
+  // ── LUCES ─────────────────────────────────────────────────────
+  scene.add(new THREE.AmbientLight(0xffffff,0.7));
+  const sun=new THREE.DirectionalLight(0xfff5e0,1.2);
+  sun.position.set(20,40,20); sun.castShadow=true;
   sun.shadow.mapSize.set(2048,2048);
-  sun.shadow.camera.left=-10; sun.shadow.camera.right=10;
-  sun.shadow.camera.top=10;  sun.shadow.camera.bottom=-10;
-  sun.shadow.camera.near=0.5; sun.shadow.camera.far=60;
+  sun.shadow.camera.left=-80; sun.shadow.camera.right=80;
+  sun.shadow.camera.top=80;   sun.shadow.camera.bottom=-80;
+  sun.shadow.camera.near=0.5; sun.shadow.camera.far=200;
   scene.add(sun);
-  const fl=new THREE.DirectionalLight(0xadd8ff,0.4); fl.position.set(-6,4,-4); scene.add(fl);
+  scene.add(Object.assign(new THREE.DirectionalLight(0xadd8ff,0.3),{position:new THREE.Vector3(-10,8,-5)}));
 
-  // Suelo
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshLambertMaterial({color:0x3db33d}));
+  // ── MATERIALES ────────────────────────────────────────────────
+  const mats={
+    asphalt:  new THREE.MeshLambertMaterial({color:0x333333}),
+    sidewalk: new THREE.MeshLambertMaterial({color:0xbbbbaa}),
+    building: (c)=>new THREE.MeshLambertMaterial({color:c}),
+    bazarWall:new THREE.MeshLambertMaterial({color:0xf5e6c8}),
+    bazarRoof:new THREE.MeshLambertMaterial({color:0xcc2200}),
+    sign:     new THREE.MeshLambertMaterial({color:0xff3300,emissive:0x441100,emissiveIntensity:0.5}),
+    signText: new THREE.MeshLambertMaterial({color:0xffdd00,emissive:0x443300,emissiveIntensity:0.8}),
+    ground:   new THREE.MeshLambertMaterial({color:0x555544}),
+    window:   new THREE.MeshLambertMaterial({color:0x88bbff,emissive:0x224466,emissiveIntensity:0.3}),
+    door:     new THREE.MeshLambertMaterial({color:0x553311}),
+    lamp:     new THREE.MeshLambertMaterial({color:0x888866}),
+    lampBulb: new THREE.MeshLambertMaterial({color:0xffffcc,emissive:0xffff88,emissiveIntensity:1}),
+    lantern:  new THREE.MeshLambertMaterial({color:0xff2200,emissive:0xff4400,emissiveIntensity:0.6}),
+    white:    new THREE.MeshLambertMaterial({color:0xffffff}),
+    darkgray: new THREE.MeshLambertMaterial({color:0x444444}),
+  };
+
+  // ── HELPERS ───────────────────────────────────────────────────
+  const box=(w,h,d,mat,x,y,z)=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true;
+    scene.add(m); return m;
+  };
+  const cyl=(rt,rb,h,seg,mat,x,y,z)=>{
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);
+    m.position.set(x,y,z); m.castShadow=true; scene.add(m); return m;
+  };
+
+  // ── SUELO CIUDAD ──────────────────────────────────────────────
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),mats.ground);
   ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-  const grid=new THREE.GridHelper(200,100,0x2a8a2a,0x2a8a2a);
-  grid.position.y=0.005; grid.material.opacity=0.22; grid.material.transparent=true; scene.add(grid);
 
-  const gc=[0x2e9e2e,0x36b036,0x28882e,0x3ac43a];
-  for(let i=0;i<300;i++){
-    const h=0.06+Math.random()*0.18;
-    const b=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.035,h,4),new THREE.MeshLambertMaterial({color:gc[i%4]}));
-    const a=Math.random()*Math.PI*2,d=3+Math.random()*35;
-    b.position.set(Math.cos(a)*d,h/2,Math.sin(a)*d); scene.add(b);
+  // ── CALLES (asfalto) ──────────────────────────────────────────
+  // Calle principal E-O: z=0
+  // Calle secundaria N-S: x=0
+  // Calle bazar: rodea el bazar
+  const road=(x,z,w,h)=>{
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mats.asphalt);
+    m.rotation.x=-Math.PI/2; m.position.set(x,0.01,z);
+    m.receiveShadow=true; scene.add(m);
+  };
+  // Calle principal E-O
+  road(0,  0,   200, 7);
+  // Calle N-S
+  road(0, 30,   7, 200);
+  // Calles secundarias
+  road(-35,  0,  7, 200);
+  road( 35,  0,  7, 200);
+  road(0, -30,  200, 7);
+  road(0,  60,  200, 7);
+
+  // Líneas de carretera
+  const lineMat=new THREE.MeshLambertMaterial({color:0xffffff});
+  for(let x=-90;x<90;x+=6){
+    const l=new THREE.Mesh(new THREE.PlaneGeometry(3,0.15),lineMat);
+    l.rotation.x=-Math.PI/2; l.position.set(x,0.02,0); scene.add(l);
+    const l2=new THREE.Mesh(new THREE.PlaneGeometry(3,0.15),lineMat);
+    l2.rotation.x=-Math.PI/2; l2.position.set(x,0.02,-30); scene.add(l2);
   }
-  const cmat=new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.9});
-  for(let i=0;i<10;i++){
-    const g=new THREE.Group();
-    for(let j=0;j<6;j++){
-      const s=new THREE.Mesh(new THREE.SphereGeometry(1.2+Math.random()*2,8,6),cmat);
-      s.position.set((Math.random()-.5)*7,(Math.random()-.5)*1.5,(Math.random()-.5)*3); g.add(s);
+
+  // ── ACERAS ────────────────────────────────────────────────────
+  const sidewalk=(x,z,w,h,elev=0.08)=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,elev,h),mats.sidewalk);
+    m.position.set(x,elev/2,z); m.receiveShadow=true; scene.add(m);
+  };
+  // Aceras calle principal
+  sidewalk(0,  4.5, 200, 2);
+  sidewalk(0, -4.5, 200, 2);
+  sidewalk(0,  25.5, 200, 2);
+  sidewalk(0, -25.5, 200, 2);
+  sidewalk(4.5, 30, 2, 200);
+  sidewalk(-4.5,30, 2, 200);
+  sidewalk(4.5,  0, 2, 200);
+  sidewalk(-4.5, 0, 2, 200);
+
+  // ── FAROLAS ───────────────────────────────────────────────────
+  const addLamp=(x,z)=>{
+    cyl(0.04,0.06,3.5,6,mats.lamp,x,1.75,z);
+    const top=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.08,0.15),mats.lamp);
+    top.position.set(x,3.6,z); scene.add(top);
+    const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,6),mats.lampBulb);
+    bulb.position.set(x,3.5,z); scene.add(bulb);
+    // Linternas chinas decorativas
+    const lan=new THREE.Mesh(new THREE.SphereGeometry(0.15,8,6),mats.lantern);
+    lan.position.set(x+0.3,3.2,z); scene.add(lan);
+  };
+  for(let x=-90;x<=90;x+=12){ addLamp(x, 5.5); addLamp(x,-5.5); }
+  for(let x=-90;x<=90;x+=12){ addLamp(x,26.5); addLamp(x,-26.5); }
+  for(let z=-90;z<=90;z+=12){ addLamp(5.5,z+30); addLamp(-5.5,z+30); }
+
+  // ── FUNCIÓN EDIFICIO CIUDAD ───────────────────────────────────
+  const buildingColors=[0xd4b896,0xc4a882,0xe8d5b0,0xb8a080,0xddc8a0,0xc8b090,0xa09070,0xd8c4a8];
+  const addBuilding=(x,z,w,d,h,colorIdx)=>{
+    const col=buildingColors[colorIdx%buildingColors.length];
+    // Cuerpo
+    box(w,h,d,mats.building(col),x,h/2,z);
+    // Techo plano más oscuro
+    box(w+0.1,0.2,d+0.1,mats.building(0x886655),x,h+0.1,z);
+    // Ventanas
+    const wRows=Math.max(1,Math.floor(h/2.5));
+    const wCols=Math.max(1,Math.floor(w/2.5));
+    for(let wr=0;wr<wRows;wr++){
+      for(let wc=0;wc<wCols;wc++){
+        const wy=1.5+wr*2.5;
+        const wx=x-w/2+1.2+wc*(w/(wCols));
+        // Ventana frontal
+        const win=new THREE.Mesh(new THREE.BoxGeometry(0.8,1.0,0.05),mats.window);
+        win.position.set(wx,wy,z+d/2+0.03); scene.add(win);
+        // Ventana trasera
+        const win2=win.clone();
+        win2.position.set(wx,wy,z-d/2-0.03); scene.add(win2);
+      }
     }
-    g.position.set((Math.random()-.5)*100,13+Math.random()*12,-10-Math.random()*60); scene.add(g);
+    // Puerta planta baja (solo frontal)
+    const door=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.6,0.05),mats.door);
+    door.position.set(x,0.8,z+d/2+0.04); scene.add(door);
+  };
+
+  // ── MANZANAS DE CIUDAD ────────────────────────────────────────
+  // Layout: calles en x=-35,0,35 y z=-30,0,30,60
+  // Manzanas entre calles
+  const blocks=[
+    // [cx, cz, ancho_manzana, prof_manzana]
+    [-17.5, -15, 24, 18],  // manzana NO
+    [ 17.5, -15, 24, 18],  // manzana NE
+    [-17.5,  15, 24, 18],  // manzana SO (frente al bazar)
+    [ 17.5,  15, 24, 18],  // manzana SE
+    [-17.5,  45, 24, 18],  // manzana detrás bazar
+    [ 17.5,  45, 24, 18],
+    [-17.5, -45, 24, 18],  // más al sur
+    [ 17.5, -45, 24, 18],
+  ];
+
+  let ci=0;
+  blocks.forEach(([cx,cz,bw,bd])=>{
+    // 2-3 edificios por manzana
+    const numB=2+Math.floor(Math.random()*2);
+    const bWidth=bw/numB-1;
+    for(let i=0;i<numB;i++){
+      const bx=cx-bw/2+bWidth/2+i*(bWidth+1)+0.5;
+      const bh=4+Math.floor(Math.random()*5)*2; // 4-12u de alto
+      addBuilding(bx,cz,bWidth,bd-2,bh,ci++);
+    }
+  });
+
+  // Edificios extras en los lados
+  for(let z=-60;z<=60;z+=20){
+    if(Math.abs(z)<5)continue;
+    addBuilding(-50,z,8,8,6+Math.floor(Math.random()*8),ci++);
+    addBuilding( 50,z,8,8,6+Math.floor(Math.random()*8),ci++);
   }
 
-  // Cargar GLBs
+  // ── BAZAR CHINO (edificio grande) ─────────────────────────────
+  // Centrado en x=0, z=30 (entre las dos calles E-O)
+  // Planta: 44u ancho x 14u prof, 5u alto
+  const BAZAR_X=0, BAZAR_Z=30, BAZAR_W=44, BAZAR_D=14, BAZAR_H=5.5;
+
+  // Suelo interior del bazar (un poco más alto que la calle)
+  const bazarFloor=new THREE.Mesh(new THREE.PlaneGeometry(BAZAR_W,BAZAR_D),new THREE.MeshLambertMaterial({color:0xf0e8d0}));
+  bazarFloor.rotation.x=-Math.PI/2; bazarFloor.position.set(BAZAR_X,0.05,BAZAR_Z);
+  bazarFloor.receiveShadow=true; scene.add(bazarFloor);
+
+  // Paredes exteriores
+  // Pared frontal (sur, z=BAZAR_Z-BAZAR_D/2) con huecos para puertas
+  // Izquierda
+  box(14,BAZAR_H,0.3,mats.bazarWall, BAZAR_X-15, BAZAR_H/2, BAZAR_Z-BAZAR_D/2);
+  // Centro-izq (entre puertas)
+  box(6, BAZAR_H,0.3,mats.bazarWall, BAZAR_X-3,  BAZAR_H/2, BAZAR_Z-BAZAR_D/2);
+  // Centro-der
+  box(6, BAZAR_H,0.3,mats.bazarWall, BAZAR_X+3,  BAZAR_H/2, BAZAR_Z-BAZAR_D/2);
+  // Derecha
+  box(14,BAZAR_H,0.3,mats.bazarWall, BAZAR_X+15, BAZAR_H/2, BAZAR_Z-BAZAR_D/2);
+  // Franja superior sobre puertas
+  box(BAZAR_W,1.5,0.3,mats.bazarWall, BAZAR_X, BAZAR_H-0.75, BAZAR_Z-BAZAR_D/2);
+  // Pared trasera
+  box(BAZAR_W,BAZAR_H,0.3,mats.bazarWall, BAZAR_X, BAZAR_H/2, BAZAR_Z+BAZAR_D/2);
+  // Paredes laterales
+  box(0.3,BAZAR_H,BAZAR_D,mats.bazarWall, BAZAR_X-BAZAR_W/2, BAZAR_H/2, BAZAR_Z);
+  box(0.3,BAZAR_H,BAZAR_D,mats.bazarWall, BAZAR_X+BAZAR_W/2, BAZAR_H/2, BAZAR_Z);
+
+  // Techo rojo estilo chino (ligeramente curvado con capas)
+  box(BAZAR_W+2,0.4,BAZAR_D+2,mats.bazarRoof, BAZAR_X, BAZAR_H+0.2, BAZAR_Z);
+  box(BAZAR_W+3,0.25,BAZAR_D+3,mats.bazarRoof, BAZAR_X, BAZAR_H+0.0, BAZAR_Z);
+  // Alero saliente
+  box(BAZAR_W+4,0.2,BAZAR_D+4,new THREE.MeshLambertMaterial({color:0xaa1800}), BAZAR_X, BAZAR_H-0.2, BAZAR_Z);
+
+  // Cartel principal del bazar
+  box(20,2.5,0.2,mats.sign, BAZAR_X, BAZAR_H+1.5, BAZAR_Z-BAZAR_D/2-0.1);
+  // Texto cartel (rectángulos decorativos dorados)
+  for(let i=-3;i<=3;i++){
+    box(1.2,1.8,0.05,mats.signText, BAZAR_X+i*2.5, BAZAR_H+1.5, BAZAR_Z-BAZAR_D/2-0.22);
+  }
+
+  // Columnas decorativas rojas a la entrada
+  const colMat=new THREE.MeshLambertMaterial({color:0xcc1100});
+  for(let i=-1;i<=1;i+=2){
+    cyl(0.2,0.2,BAZAR_H,8,colMat, BAZAR_X+i*6, BAZAR_H/2, BAZAR_Z-BAZAR_D/2);
+    cyl(0.2,0.2,BAZAR_H,8,colMat, BAZAR_X+i*12, BAZAR_H/2, BAZAR_Z-BAZAR_D/2);
+  }
+
+  // Linternas rojas en la entrada
+  for(let i=-10;i<=10;i+=4){
+    const lan=new THREE.Mesh(new THREE.SphereGeometry(0.25,8,8),mats.lantern);
+    lan.position.set(BAZAR_X+i, BAZAR_H-0.5, BAZAR_Z-BAZAR_D/2+0.2);
+    scene.add(lan);
+    // Hilo
+    const linGeo=new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(BAZAR_X+i,BAZAR_H+0.2,BAZAR_Z-BAZAR_D/2+0.2),
+      new THREE.Vector3(BAZAR_X+i,BAZAR_H-0.25,BAZAR_Z-BAZAR_D/2+0.2)
+    ]);
+    scene.add(new THREE.Line(linGeo,new THREE.LineBasicMaterial({color:0x333333})));
+  }
+
+  // Puertas del bazar (marcos)
+  const doorMat=new THREE.MeshLambertMaterial({color:0x882200});
+  // 3 puertas de 4u ancho x 4u alto
+  [-8,0,8].forEach(dx=>{
+    // Marco superior
+    box(4.2,0.3,0.1,doorMat, BAZAR_X+dx, 4.15, BAZAR_Z-BAZAR_D/2);
+    // Marcos laterales
+    box(0.2,4,0.1,doorMat, BAZAR_X+dx-2.1, 2, BAZAR_Z-BAZAR_D/2);
+    box(0.2,4,0.1,doorMat, BAZAR_X+dx+2.1, 2, BAZAR_Z-BAZAR_D/2);
+  });
+
+  // ── INTERIOR DEL BAZAR (pasillos y estanterías) ───────────────
+  const shelfMat=new THREE.MeshLambertMaterial({color:0xaa8855});
+  const shelfItemMats=[
+    new THREE.MeshLambertMaterial({color:0xff6644}),
+    new THREE.MeshLambertMaterial({color:0x44aaff}),
+    new THREE.MeshLambertMaterial({color:0xffcc00}),
+    new THREE.MeshLambertMaterial({color:0x44ff88}),
+    new THREE.MeshLambertMaterial({color:0xff44aa}),
+    new THREE.MeshLambertMaterial({color:0xffffff}),
+  ];
+
+  // Estanterías en filas (2 filas de 4 estantes)
+  const addShelf=(x,z)=>{
+    // Estructura estantería (3 niveles)
+    box(3,2.5,0.3,shelfMat,x,1.25,z);
+    // Estantes
+    [0.5,1.2,1.9].forEach(sy=>{
+      box(3,0.08,0.3,new THREE.MeshLambertMaterial({color:0x886633}),x,sy,z);
+      // Productos encima
+      for(let i=-1;i<=1;i++){
+        const m=shelfItemMats[Math.floor(Math.random()*shelfItemMats.length)];
+        box(0.25+Math.random()*0.2,0.3+Math.random()*0.25,0.2,m,x+i*0.5,sy+0.2,z);
+      }
+    });
+  };
+
+  // 2 filas de estantes, 6 estantes por fila
+  for(let i=0;i<6;i++){
+    addShelf(BAZAR_X-10+i*4, BAZAR_Z-2);   // fila frontal
+    addShelf(BAZAR_X-10+i*4, BAZAR_Z+2);   // fila trasera
+  }
+
+  // Mostrador central del bazar
+  box(12,1.1,1.5,new THREE.MeshLambertMaterial({color:0x995522}), BAZAR_X, 0.55, BAZAR_Z+5);
+  box(12,0.08,1.6,new THREE.MeshLambertMaterial({color:0xddbb88}), BAZAR_X, 1.15, BAZAR_Z+5);
+
+  // Decoración techo interior: farolillos
+  for(let i=-3;i<=3;i++){
+    const l=new THREE.Mesh(new THREE.SphereGeometry(0.2,8,8),mats.lantern);
+    l.position.set(BAZAR_X+i*5,BAZAR_H-0.4,BAZAR_Z); scene.add(l);
+  }
+
+  // ── ÁRBOLES en ciudad (usando GLB) ────────────────────────────
+  sp(30,'Cargando modelos...');
   const loader=new THREE.GLTFLoader();
   const load=(url,label,pct)=>new Promise(res=>{
-    sp(pct,`Cargando ${label}...`);
-    loader.load(url,res,undefined,e=>{console.error(label,e);res(null);});
+    sp(pct,label);
+    loader.load(url,res,undefined,e=>{console.error(e);res(null);});
   });
+
   const M='models/';
-  const gChar=await load(M+'Meshy_AI_Crimson_Hoodie_Portra_biped_Character_output.glb','personaje',15);
-  const gWalk=await load(M+'Meshy_AI_Crimson_Hoodie_Portra_biped_Animation_Walking_withSkin.glb','walking',40);
-  const gRun =await load(M+'Meshy_AI_Crimson_Hoodie_Portra_biped_Animation_Running_withSkin.glb','running',65);
-  const gJump=await load(M+'Meshy_AI_Animation_Regular_Jump_withSkin.glb','jumping',80);
-  const gTree  = await load(M+'tree.glb',    'arboles', 80);
-  const gHouseA= await load(M+'house_a.glb', 'casa A',  86);
-  const gHouseB= await load(M+'house_b.glb', 'casa B',  90);
-  const gHouseC= await load(M+'house_c.glb', 'casa C',  94);
-  const gHouseD= await load(M+'house_d.glb', 'casa D',  98);
+  sp(35,'Cargando personaje...');
+  const gChar=await load(M+'Meshy_AI_Crimson_Hoodie_Portra_biped_Character_output.glb','Personaje...',38);
+  const gWalk=await load(M+'Meshy_AI_Crimson_Hoodie_Portra_biped_Animation_Walking_withSkin.glb','Walking...',55);
+  const gRun =await load(M+'Meshy_AI_Crimson_Hoodie_Portra_biped_Animation_Running_withSkin.glb','Running...',70);
+  const gJump=await load(M+'Meshy_AI_Animation_Regular_Jump_withSkin.glb','Jumping...',82);
+  const gTree=await load(M+'tree.glb','Árboles...',92);
   sp(100,'¡Listo!');
 
-  // CAMINOS con InstancedMesh (una sola draw call, muy eficiente)
-  const pathMat=new THREE.MeshLambertMaterial({color:0x8B6340});
-  const tileGeo=new THREE.PlaneGeometry(1,1);
-
-  // Generar posiciones de todas las baldosas
-  const tilePosNS=[], tileEO1=[], tileEO2=[];
-  for(let z=-150;z<=150;z++) for(let x=-2;x<=1;x++) tilePosNS.push([x+0.5,z+0.5]);
-  for(let x=-150;x<=150;x++) for(let dz=-2;dz<=1;dz++){
-    if(Math.abs(x+0.5)>2.5){ tileEO1.push([x+0.5,-30+dz+0.5]); tileEO2.push([x+0.5,50+dz+0.5]); }
-  }
-
-  const buildInstanced=(positions)=>{
-    const mesh=new THREE.InstancedMesh(tileGeo,pathMat,positions.length);
-    mesh.receiveShadow=true;
-    const m=new THREE.Matrix4();
-    const rot=new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2,0,0));
-    positions.forEach(([x,z],i)=>{
-      m.compose(new THREE.Vector3(x,0.01,z),rot,new THREE.Vector3(1,1,1));
-      mesh.setMatrixAt(i,m);
-    });
-    mesh.instanceMatrix.needsUpdate=true;
-    scene.add(mesh);
-    return mesh;
-  };
-
-  buildInstanced(tilePosNS);
-  buildInstanced(tileEO1);
-  buildInstanced(tileEO2);
-
-  // ── FAROLAS (solo las cercanas al origen, pocas PointLights) ────
-  const poleMat=new THREE.MeshLambertMaterial({color:0x444444});
-  const bulbMat=new THREE.MeshLambertMaterial({color:0xffffaa,emissive:0xffff66,emissiveIntensity:1});
-  const addLamp=(x,z)=>{
-    const g=new THREE.Group();
-    const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.07,3,6),poleMat);
-    pole.position.y=1.5; g.add(pole);
-    const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.15,6,6),bulbMat);
-    bulb.position.y=3.1; g.add(bulb);
-    // Solo añadir PointLight a las farolas muy cercanas al origen (para no matar la GPU)
-    if(Math.abs(x)<30 && Math.abs(z)<30){
-      const pl=new THREE.PointLight(0xffffaa,0.8,10); pl.position.y=3; g.add(pl);
-    }
-    g.position.set(x,0,z); g.castShadow=true; scene.add(g);
-  };
-  // Farolas cada 10u solo en zona central visible
-  for(let z=-60;z<=60;z+=10){addLamp(-2.5,z);addLamp(2.5,z);}
-  for(let x=-60;x<=60;x+=10){if(Math.abs(x)>3){addLamp(x,-32.5);addLamp(x,47.5);}}
-
-  // ── ÁRBOLES con InstancedMesh (una sola draw call) ───────────
+  // Árboles con InstancedMesh
   if(gTree){
-    // Recoger geometrías y materiales del árbol
     const treeMeshes=[];
-    gTree.scene.traverse(ch=>{ if(ch.isMesh) treeMeshes.push(ch); });
+    gTree.scene.traverse(ch=>{if(ch.isMesh)treeMeshes.push(ch);});
+    const treePos=[];
+    // Árboles en aceras de la ciudad
+    for(let x=-80;x<=80;x+=10){ treePos.push([x,6,1.5,Math.random()*Math.PI*2]); }
+    for(let x=-80;x<=80;x+=10){ treePos.push([x,-6,1.5,Math.random()*Math.PI*2]); }
+    for(let z=-80;z<=80;z+=10){ treePos.push([6,z+30,1.5,Math.random()*Math.PI*2]); }
+    for(let z=-80;z<=80;z+=10){ treePos.push([-6,z+30,1.5,Math.random()*Math.PI*2]); }
+    // Árboles frente al bazar
+    for(let x=-18;x<=18;x+=6){ treePos.push([x,22,1.5,Math.random()*Math.PI*2]); }
 
-    // Generar posiciones de árboles (solo bordes de caminos, cada 8u)
-    const treePositions=[];
-    for(let z=-120;z<=120;z+=8){
-      treePositions.push([-4,z,0.8+Math.random()*0.4,Math.random()*Math.PI*2]);
-      treePositions.push([ 4,z,0.8+Math.random()*0.4,Math.random()*Math.PI*2]);
-    }
-    for(let x=-120;x<=120;x+=8){
-      if(Math.abs(x)<4)continue;
-      treePositions.push([x,-35,0.8+Math.random()*0.4,Math.random()*Math.PI*2]);
-      treePositions.push([x, 51,0.8+Math.random()*0.4,Math.random()*Math.PI*2]);
-    }
-
-    // Crear InstancedMesh por cada submesh del árbol
     const dummy=new THREE.Object3D();
     treeMeshes.forEach(tm=>{
-      const im=new THREE.InstancedMesh(tm.geometry, tm.material, treePositions.length);
-      im.castShadow=true; im.receiveShadow=true;
-      treePositions.forEach(([x,z,s,ry],i)=>{
+      const im=new THREE.InstancedMesh(tm.geometry,tm.material,treePos.length);
+      im.castShadow=true;
+      treePos.forEach(([x,z,s,ry],i)=>{
         dummy.position.set(x,0,z);
         dummy.rotation.set(0,ry,0);
         dummy.scale.setScalar(s);
@@ -194,22 +383,18 @@ window.addEventListener('load', async () => {
     });
   }
 
-
+  // ── PERSONAJE ─────────────────────────────────────────────────
   let char=null,mixer=null;
   const anims={};
   let curAct=null;
 
   if(gChar){
     char=gChar.scene;
-
-    // ★ ESCALA CORRECTA: el GLB está en centímetros → escalar a 0.01 para obtener metros
-    // El personaje mide ~170cm → 170 * 0.01 = 1.7 unidades (metros)
     char.scale.setScalar(1.0);
-    char.position.set(0,0,0);
-    char.rotation.y = 0;
+    char.position.set(0,0,-10); // empieza en la calle
+    char.rotation.y=0;
     char.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;}});
     scene.add(char);
-
     mixer=new THREE.AnimationMixer(char);
     const addA=(g,name,loop=true)=>{
       if(!g?.animations?.length)return;
@@ -218,10 +403,14 @@ window.addEventListener('load', async () => {
       anims[name]=a;
     };
     addA(gChar,'idle'); addA(gWalk,'walk'); addA(gRun,'run'); addA(gJump,'jump',false);
-    if(anims['jump']) anims['jump'].timeScale = 2;
+    if(anims['jump']) anims['jump'].timeScale=2;
   }
 
-  setTimeout(()=>{const el=document.getElementById('loading');el.style.opacity='0';setTimeout(()=>el.style.display='none',700);},300);
+  setTimeout(()=>{
+    const el=document.getElementById('loading');
+    el.style.opacity='0';
+    setTimeout(()=>el.style.display='none',700);
+  },300);
 
   const lbls={idle:'Idle',walk:'Caminando',run:'Corriendo',jump:'Saltando'};
   const play=name=>{
@@ -231,13 +420,14 @@ window.addEventListener('load', async () => {
     if(curAct)curAct.fadeOut(0.2);
     next.reset().fadeIn(0.2).play();
     curAct=next;
-    document.getElementById('aname').textContent=lbls[name]||'Idle';
+    document.getElementById('aname')&&(document.getElementById('aname').textContent=lbls[name]||'Idle');
   };
   setTimeout(()=>play('idle'),500);
 
+  // ── CONTROLES ─────────────────────────────────────────────────
   const K={};
   addEventListener('keydown',e=>{K[e.code]=true;});
-  addEventListener('keyup',e=>{K[e.code]=false;});
+  addEventListener('keyup',  e=>{K[e.code]=false;});
   let jumping=false,jv=0;
   addEventListener('keydown',e=>{
     if(e.code==='Space'&&!jumping&&char){
@@ -253,73 +443,72 @@ window.addEventListener('load', async () => {
     }
   });
 
-
-
-
-  // ── CASAS solo bordeando caminos (pocas, aleatorias) ──────────
-  const houseModels=[gHouseA,gHouseB,gHouseC,gHouseD].filter(Boolean);
-  const placeHouse=(x,z,ry)=>{
-    if(!houseModels.length)return;
-    const g=houseModels[Math.floor(Math.random()*houseModels.length)];
-    const h=g.scene.clone(true);
-    const s=3;
-    h.scale.setScalar(s);
-    h.position.set(x,0.681*s,z);
-    h.rotation.y=ry||0;
-    h.traverse(ch=>{if(ch.isMesh){ch.castShadow=true;ch.receiveShadow=true;}});
-    scene.add(h);
+  // ── ZONA DETECTOR ─────────────────────────────────────────────
+  const zoneEl=document.getElementById('zone');
+  const checkZone=()=>{
+    if(!char)return;
+    const x=char.position.x, z=char.position.z;
+    if(Math.abs(x-BAZAR_X)<BAZAR_W/2 && Math.abs(z-BAZAR_Z)<BAZAR_D/2){
+      zoneEl.textContent='🏮 Bazar Chino';
+    } else {
+      zoneEl.textContent='🏙️ Ciudad';
+    }
   };
-  // Camino N-S: casas cada 20u, probabilidad 60%
-  for(let z=-100;z<=100;z+=20){
-    if(Math.random()<0.6) placeHouse(-12+(Math.random()-.5)*4, z, Math.random()*Math.PI*2);
-    if(Math.random()<0.6) placeHouse( 12+(Math.random()-.5)*4, z, Math.random()*Math.PI*2);
-  }
-  // Camino E-O z=-30
-  for(let x=-100;x<=100;x+=20){
-    if(Math.abs(x)<5)continue;
-    if(Math.random()<0.5) placeHouse(x, -42+(Math.random()-.5)*4, Math.random()*Math.PI*2);
-    if(Math.random()<0.5) placeHouse(x, -18+(Math.random()-.5)*4, Math.random()*Math.PI*2);
-  }
-  // Camino E-O z=50
-  for(let x=-100;x<=100;x+=20){
-    if(Math.abs(x)<5)continue;
-    if(Math.random()<0.5) placeHouse(x, 42+(Math.random()-.5)*4, Math.random()*Math.PI*2);
-    if(Math.random()<0.5) placeHouse(x, 58+(Math.random()-.5)*4, Math.random()*Math.PI*2);
-  }
 
-
-  // ── CULLING — construido DESPUÉS de todo ──────────────────────
-  const CULL_DIST2 = 30*30;
-  const worldObjs = scene.children.filter(o=>
-    !o.isLight && !o.isCamera && o!==ground && o!==grid && o!==char
-  );
+  // ── CULLING ───────────────────────────────────────────────────
+  const CULL2=45*45;
+  const worldObjs=scene.children.filter(o=>!o.isLight&&!o.isCamera&&o!==ground);
   const cullAll=()=>{
     if(!char)return;
-    const cx=char.position.x, cz=char.position.z;
+    const cx=char.position.x,cz=char.position.z;
     worldObjs.forEach(o=>{
       if(o===char)return;
-      const dx=o.position.x-cx, dz=o.position.z-cz;
-      o.visible=(dx*dx+dz*dz)<CULL_DIST2;
+      const dx=o.position.x-cx,dz=o.position.z-cz;
+      o.visible=(dx*dx+dz*dz)<CULL2;
     });
   };
 
+  // ── CÁMARA ────────────────────────────────────────────────────
+  let camYaw=Math.PI, camPitch=0.3;
+  const CAM_DIST=4.5, CAM_H=1.0;
+  const camTgt=new THREE.Vector3();
+  let pointerLocked=false;
+  document.addEventListener('click',()=>document.body.requestPointerLock());
+  document.addEventListener('pointerlockchange',()=>{pointerLocked=document.pointerLockElement===document.body;});
+  document.addEventListener('mousemove',e=>{
+    if(!pointerLocked)return;
+    camYaw  -=e.movementX*0.003;
+    camPitch-=e.movementY*0.003;
+    camPitch=Math.max(-0.2,Math.min(1.0,camPitch));
+  });
 
-  const CAM_OFF=new THREE.Vector3(0,1.6,-4.5);
-  const camTgt=new THREE.Vector3(0,1,0);
+  // ── LOOP ──────────────────────────────────────────────────────
   const clk=new THREE.Clock();
-
   (function loop(){
     requestAnimationFrame(loop);
     const dt=Math.min(clk.getDelta(),0.05);
     if(mixer)mixer.update(dt);
+    cullAll();
+    checkZone();
+
     if(char){
       const spd=(K.ShiftLeft||K.ShiftRight)?5.5:2.8;
-      if(K.KeyA||K.ArrowLeft) char.rotation.y+=2.2*dt;
-      if(K.KeyD||K.ArrowRight)char.rotation.y-=2.2*dt;
-      let mov=false;
-      if(K.KeyW||K.ArrowUp){
-        const d=new THREE.Vector3(Math.sin(char.rotation.y),0,Math.cos(char.rotation.y));
-        char.position.addScaledVector(d,spd*dt); mov=true;
+      const camFwd=new THREE.Vector3(-Math.sin(camYaw),0,-Math.cos(camYaw)).normalize();
+      const camRight=new THREE.Vector3(-camFwd.z,0,camFwd.x).normalize();
+      const moveDir=new THREE.Vector3();
+      if(K.KeyW||K.ArrowUp)    moveDir.add(camFwd);
+      if(K.KeyS||K.ArrowDown)  moveDir.sub(camFwd);
+      if(K.KeyA||K.ArrowLeft)  moveDir.sub(camRight);
+      if(K.KeyD||K.ArrowRight) moveDir.add(camRight);
+      const mov=moveDir.lengthSq()>0;
+      if(mov){
+        moveDir.normalize();
+        char.position.addScaledVector(moveDir,spd*dt);
+        const ta=Math.atan2(moveDir.x,moveDir.z);
+        let da=ta-char.rotation.y;
+        while(da>Math.PI)da-=Math.PI*2;
+        while(da<-Math.PI)da+=Math.PI*2;
+        char.rotation.y+=da*Math.min(1,12*dt);
       }
       if(jumping){jv+=-10*dt;char.position.y+=jv*dt;if(char.position.y<=0){char.position.y=0;if(!anims['jump']){jumping=false;jv=0;}}}
       if(!jumping){
@@ -327,9 +516,11 @@ window.addEventListener('load', async () => {
         else if(mov)play('walk');
         else play('idle');
       }
-      const wo=CAM_OFF.clone().applyEuler(new THREE.Euler(0,char.rotation.y,0));
-      cam.position.lerp(char.position.clone().add(wo),1-Math.pow(0.001,dt));
-      camTgt.lerp(char.position.clone().add(new THREE.Vector3(0,1,0)),1-Math.pow(0.0001,dt));
+      const cx=char.position.x+Math.sin(camYaw)*Math.cos(camPitch)*CAM_DIST;
+      const cy=char.position.y+CAM_H+Math.sin(camPitch)*CAM_DIST;
+      const cz=char.position.z+Math.cos(camYaw)*Math.cos(camPitch)*CAM_DIST;
+      cam.position.lerp(new THREE.Vector3(cx,cy,cz),1-Math.pow(0.001,dt));
+      camTgt.lerp(char.position.clone().add(new THREE.Vector3(0,CAM_H,0)),1-Math.pow(0.0001,dt));
       cam.lookAt(camTgt);
     }
     R.render(scene,cam);
